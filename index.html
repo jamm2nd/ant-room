@@ -702,24 +702,30 @@ addEventListener("message",function(ev){
   if(!d||!d.info)return;var i=d.info;yt.ok=true;
   if(typeof i.currentTime==="number"){yt.t=i.currentTime;yt.at=performance.now()}
   if(typeof i.playerState==="number")yt.st=i.playerState;if(typeof i.playlistIndex==="number")yt.pi=i.playlistIndex;
-  if(i.videoData&&typeof i.videoData.isLive==="boolean")yt.live=i.videoData.isLive});
+  if(typeof i.duration==="number")yt.dur=i.duration;if(i.videoData&&typeof i.videoData.isLive==="boolean")yt.live=i.videoData.isLive});
 function ytNow(){return yt.t+(yt.st===1?(performance.now()-yt.at)/1000:0)}
-function vtMsg(){return yt.ok&&video?{t:"vt",p:+ytNow().toFixed(2),st:yt.st,pi:yt.pi,live:yt.live}:null}
-function mkSync(m){return {p:+m.p||0,st:m.st|0,pi:typeof m.pi==="number"?m.pi:-1,live:!!m.live,at:performance.now()}}
+// 방의 방송 시계: 방장 플레이어가 재생 중일 때의 위치를 기준으로 삼고, 방장 탭이 가려져 멈춰도 계속 흐른다
+var room={p:0,at:0,ok:false};
+function roomNow(){return room.p+(performance.now()-room.at)/1000}
+function vtMsg(){return room.ok&&video?{t:"vt",p:+roomNow().toFixed(2),pi:yt.pi,live:yt.live}:null}
+function mkSync(m){return {p:+m.p||0,pi:typeof m.pi==="number"?m.pi:-1,live:!!m.live,at:performance.now()}}
+function reloadVideo(){var v=video;setVideo(v,true)}
 function ytPoll(now){
   if(!ytFrame||!ytFrame.contentWindow)return;
-  if(!yt.ok&&now-yt.lsn>700){yt.lsn=now;ytFrame.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*")}
-  if(yt.ok&&(yt.st===-1||yt.st===5)&&now-yt.kick>2500&&(isHost||!vsync||vsync.st!==2)){yt.kick=now;ytCmd("playVideo")}   // 자동 재생이 안 걸렸으면 한 번 더 건다
-  if(isHost||!vsync||!yt.ok||now-vsync.at>12000)return;
+  if(!yt.ok){if(now-yt.lsn>700){yt.lsn=now;ytFrame.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*")}return}
+  if((yt.st===-1||yt.st===5)&&now-yt.kick>2500){yt.kick=now;ytCmd("playVideo");return}        // 자동 재생이 안 걸렸으면 한 번 더 건다
+  var want=isHost?(room.ok?roomNow():null):(vsync&&now-vsync.at<12000?vsync.p+(now-vsync.at)/1000:null);
+  if(yt.st===2&&!document.hidden&&now-yt.kick>3000){yt.kick=now;                                // 탭이 가려져 멈췄다가 돌아온 경우: 방송 시계로 복귀
+    if(yt.live)reloadVideo();else{if(want!=null&&(!yt.dur||want<yt.dur-3))ytCmd("seekTo",[want,true]);ytCmd("playVideo")}return}
+  if(isHost){if(yt.st===1&&now-yt.at<1500){room.p=yt.t;room.at=yt.at;room.ok=true}return}
+  if(want==null||yt.st!==1)return;
   var live=vsync.live||yt.live,cool=live?20000:4000;if(now-seekLast<cool)return;
   if(vsync.pi>=0&&yt.pi>=0&&vsync.pi!==yt.pi&&video.indexOf("list:")===0){ytCmd("playVideoAt",[vsync.pi]);seekLast=now;return}
-  if(vsync.st===2&&yt.st===1){ytCmd("pauseVideo");seekLast=now-cool+1500;return}
-  if(vsync.st===1&&(yt.st===2||yt.st===5||yt.st===-1)){ytCmd("playVideo");seekLast=now-cool+1500;return}
-  var want=vsync.p+(vsync.st===1?(now-vsync.at)/1000:0);
-  if(yt.st===1&&Math.abs(ytNow()-want)>(live?12:2.5)){ytCmd("seekTo",[want+.4,true]);seekLast=now}
+  if(yt.dur&&!live&&want>yt.dur-3)return;
+  if(Math.abs(ytNow()-want)>(live?12:2.5)){ytCmd("seekTo",[want+.4,true]);seekLast=now}
 }
 function setVideo(id,fromNet){
-  video=/^(list:[\w-]{10,64}|live:UC[\w-]{22}|[\w-]{11})$/.test(id||"")?id:"";yt.ok=false;yt.st=-1;yt.pi=-1;yt.t=0;yt.live=false;vsync=null;var w=$("ytwrap");w.innerHTML="";ytFrame=null;muted=true;$("bSound").textContent="소리 켜기";$("bSound").classList.remove("on");
+  video=/^(list:[\w-]{10,64}|live:UC[\w-]{22}|[\w-]{11})$/.test(id||"")?id:"";yt.ok=false;yt.st=-1;yt.pi=-1;yt.t=0;yt.dur=0;yt.live=false;vsync=null;room.ok=false;var w=$("ytwrap");w.innerHTML="";ytFrame=null;muted=true;$("bSound").textContent="소리 켜기";$("bSound").classList.remove("on");
   if(video){
     var f=document.createElement("iframe"),q="autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0";
     if(/^https?:$/.test(location.protocol))q+="&origin="+encodeURIComponent(location.origin);
@@ -927,7 +933,7 @@ $("alt").onclick=function(){joinCode="";this.style.display="none";$("go").textCo
 if(joinCode){$("go").textContent="입장하기";$("alt").style.display="";status("초대받은 방: "+joinCode)}else $("go").textContent="방 만들기";
 $("name").focus();
 requestAnimationFrame(frame);
-window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality},yt:yt,sync:function(){return vsync},ytNow:ytNow,jump:doJump};
+window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality},yt:yt,room:room,roomNow:roomNow,sync:function(){return vsync},ytNow:ytNow,jump:doJump};
 </script>
 </body>
 </html>
