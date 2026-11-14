@@ -695,7 +695,7 @@ function ytId(s){s=clean(s,200);if(!s)return "";
   return /^[\w-]{11}$/.test(s)?s:""}
 var ytFrame=null,muted=true;
 /* 방송 시각 동기화: 유튜브 플레이어가 알려주는 재생 위치를 방장이 주기적으로 보내고, 참가자는 어긋나면 그 위치로 맞춘다 */
-var yt={ok:false,t:0,at:0,st:-1,pi:-1,live:false,lsn:0},vsync=null,vtLast=0,seekLast=0;
+var yt={ok:false,t:0,at:0,st:-1,pi:-1,live:false,lsn:0,kick:0},vsync=null,vtLast=0,seekLast=0;
 addEventListener("message",function(ev){
   if(ev.origin!=="https://www.youtube.com"||!ytFrame||ev.source!==ytFrame.contentWindow)return;var d;
   try{d=typeof ev.data==="string"?JSON.parse(ev.data):ev.data}catch(_){return}
@@ -709,6 +709,7 @@ function mkSync(m){return {p:+m.p||0,st:m.st|0,pi:typeof m.pi==="number"?m.pi:-1
 function ytPoll(now){
   if(!ytFrame||!ytFrame.contentWindow)return;
   if(!yt.ok&&now-yt.lsn>700){yt.lsn=now;ytFrame.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*")}
+  if(yt.ok&&(yt.st===-1||yt.st===5)&&now-yt.kick>2500&&(isHost||!vsync||vsync.st!==2)){yt.kick=now;ytCmd("playVideo")}   // 자동 재생이 안 걸렸으면 한 번 더 건다
   if(isHost||!vsync||!yt.ok||now-vsync.at>12000)return;
   var live=vsync.live||yt.live,cool=live?20000:4000;if(now-seekLast<cool)return;
   if(vsync.pi>=0&&yt.pi>=0&&vsync.pi!==yt.pi&&video.indexOf("list:")===0){ytCmd("playVideoAt",[vsync.pi]);seekLast=now;return}
