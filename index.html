@@ -17,6 +17,17 @@
   #ytwrap iframe{width:100%;height:100%;border:0;display:block}
   #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
   #cv.pass{pointer-events:none}
+  #pad{display:none}
+  body.touch #pad{display:block}
+  body.touch #hint{display:none}
+  body.touch #chatbar{display:none}
+  body.touch.chat #chatbar{display:flex;bottom:auto;top:112px}
+  #joy{position:absolute;left:22px;bottom:26px;width:132px;height:132px;border-radius:50%;background:rgba(18,21,28,.5);border:1px solid var(--line);touch-action:none}
+  #knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.4);pointer-events:none}
+  #btns{position:absolute;right:18px;bottom:22px;width:168px;height:168px;touch-action:none}
+  #btns button{position:absolute;width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(18,21,28,.6);color:var(--text);font-size:13px;font-weight:700;touch-action:none;-webkit-user-select:none;user-select:none}
+  #btns button:active{background:rgba(255,184,52,.5)}
+  #pY{left:54px;top:0}#pX{left:0;top:54px}#pB{right:0;top:54px}#pA{left:54px;bottom:0;border-color:var(--amber)!important;color:var(--amber)!important}
   #lb{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
   .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:10px 16px;
     backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:14px;color:var(--text)}
@@ -85,9 +96,9 @@
   <div id="pop">
     <h3>방 설정</h3>
     <div id="hostOnly">
-      <label for="yt">가운데 화면에 틀 유튜브 주소 (라이브·일반 영상 모두 가능)</label>
+      <label for="yt">가운데 화면에 틀 유튜브 주소 (실시간 방송·일반 영상). 들어오는 사람 모두 같은 시점을 봅니다</label>
       <div class="row"><input type="text" id="yt" placeholder="비우고 적용하면 방송을 끕니다"><button class="btn" id="ytGo">적용</button></div>
-      <div class="row" style="margin-top:6px"><button class="btn alt2" id="ytDef">슈카월드 최신 영상으로</button></div>
+      <div class="row" style="margin-top:6px"><button class="btn alt2" id="ytDef">슈카월드 최신 영상</button><button class="btn alt2" id="ytLive">슈카월드 실시간</button></div>
       <label for="bots">자리 채우는 봇 개미 수: <b id="botsN">60</b></label>
       <input type="range" id="bots" min="0" max="100" value="60">
     </div>
@@ -96,7 +107,11 @@
     <div class="row"><input type="text" id="link" readonly></div>
   </div>
   <div id="toast" class="pill"></div>
-  <div id="hint">이동: WASD · 방향키 · 바닥 클릭<br>시점: 드래그 · 휠<br>채팅: Enter</div>
+  <div id="pad">
+    <div id="joy"><div id="knob"></div></div>
+    <div id="btns"><button id="pY">시점</button><button id="pX">채팅</button><button id="pB">산책</button><button id="pA">점프</button></div>
+  </div>
+  <div id="hint">이동: WASD · 방향키 · 바닥 클릭<br>점프: 스페이스<br>시점: 드래그 · 휠<br>채팅: Enter</div>
   <form id="chatbar" class="pill" autocomplete="off">
     <input id="chat" maxlength="60" placeholder="한마디 남기기">
     <button type="submit" aria-label="보내기">→</button>
@@ -128,6 +143,7 @@ import {ShaderPass} from "three/addons/postprocessing/ShaderPass.js";
 import {GTAOPass} from "three/addons/postprocessing/GTAOPass.js";
 import {UnrealBloomPass} from "three/addons/postprocessing/UnrealBloomPass.js";
 import {OutputPass} from "three/addons/postprocessing/OutputPass.js";
+import {Pass,FullScreenQuad} from "three/addons/postprocessing/Pass.js";
 import {RectAreaLightUniformsLib} from "three/addons/lights/RectAreaLightUniformsLib.js";
 /* ───────────── 공용 유틸 ───────────── */
 var $=function(id){return document.getElementById(id)};
@@ -411,7 +427,7 @@ AntMesh.prototype.update=function(list,time){
   for(i=0;i<list.length;i++){
     e=list[i];L=e.look;s=L.scale;if(!e.parts)e.parts=buildVox(L);P=e.parts;if(idx+P.n>cap)break;
     walk=e.moving?Math.sin(time*11+L.phase):0;bob=e.moving?Math.abs(Math.sin(time*11+L.phase))*.07:Math.sin(time*2+L.phase)*.012;
-    _A.compose(_v.set(e.x,bob*s,e.z),_q.setFromAxisAngle(_up,e.r),_s.set(s,s,s));
+    _A.compose(_v.set(e.x,(e.y||0)+bob*s,e.z),_q.setFromAxisAngle(_up,e.r),_s.set(s,s*(1+clamp((e.vy||0)*.014,-.1,.14)),s));
     for(j=0;j<P.length;j++){
       q=P[j];ax=q.a===1?walk*.75:q.a===2?-walk*.75:0;
       _J.makeRotationFromEuler(_e.set(q.r[0]+ax,q.a===4?Math.sin(time*.8+L.phase)*.22:0,q.r[2]+(q.a===3?Math.sin(time*3+L.phase)*.07:0))).setPosition(q.p[0],q.p[1],q.p[2]);
@@ -440,8 +456,29 @@ var FinalShader={uniforms:{tDiffuse:{value:null},tMask:{value:null},time:{value:
     "void main(){vec2 d=vUv-.5;float r=dot(d,d);",
     " vec3 c=vec3(texture2D(tDiffuse,vUv+d*r*.006).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-d*r*.006).b);",   // 가장자리 색수차
     " c*=mix(1.0,.72,smoothstep(.14,.62,r));",                                                                             // 비네트
-    " c=mix(c,c*c*(3.0-2.0*c),.22);c+=(h(vUv*800.0)-.5)*.022;",                                                           // 대비·필름 그레인
+    " c=mix(c,c*c*(3.0-2.0*c),.22);c=mix(vec3(dot(c,vec3(.299,.587,.114))),c,1.16);c+=(h(vUv*800.0)-.5)*.022;",                                                           // 대비·필름 그레인
     " float a=texture2D(tMask,vUv).a;gl_FragColor=vec4(c*a,a);}"].join("\n")};
+var maskBlurRT=new THREE.WebGLRenderTarget(4,4),dof;
+// 얕은 심도: 초점(내 개미)에서 조금만 벗어나도 원형 보케로 흐려진다. 화면 구멍(알파)도 같은 방식으로 흐려서 경계를 맞춘다.
+var DofShader={uniforms:{tDiffuse:{value:null},tDepth:{value:null},tMask:{value:null},focus:{value:14},band:{value:2.0},range:{value:10},maxR:{value:12},res:{value:new THREE.Vector2(1,1)},near:{value:.2},far:{value:120},maskOnly:{value:0}},
+  vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
+  fragmentShader:[
+    "uniform sampler2D tDiffuse;uniform sampler2D tDepth;uniform sampler2D tMask;uniform float focus,band,range,maxR,near,far,maskOnly;uniform vec2 res;varying vec2 vUv;",
+    "float dist(vec2 uv){float z=texture2D(tDepth,uv).x*2.0-1.0;return 2.0*near*far/((far+near)-z*(far-near));}",
+    "float coc(float d){float x=d-focus;return smoothstep(band,band+range,x>0.0?x:-x*2.0);}",
+    "vec4 smp(vec2 uv){return maskOnly>0.5?vec4(texture2D(tMask,uv).a):vec4(texture2D(tDiffuse,uv).rgb,1.0);}",
+    "void main(){float cd=dist(vUv),cc=coc(cd);vec4 acc=smp(vUv);float ws=1.0;",
+    " if(cc>0.02){for(int i=1;i<44;i++){float fi=float(i),r=sqrt(fi/44.0),a=fi*2.39996323;vec2 uv=vUv+vec2(cos(a),sin(a))*r*cc*maxR/res;",
+    "  float sd=dist(uv),w=(sd<cd-0.8)?step(r*cc,coc(sd)+0.05):1.0;acc+=smp(uv)*w;ws+=w;}}",
+    " gl_FragColor=acc/ws;}"].join("\n")};
+class DofPass extends Pass{
+  constructor(){super();this.material=new THREE.ShaderMaterial({uniforms:THREE.UniformsUtils.clone(DofShader.uniforms),vertexShader:DofShader.vertexShader,fragmentShader:DofShader.fragmentShader});this.fsQuad=new FullScreenQuad(this.material)}
+  setSize(w,h){this.material.uniforms.res.value.set(w,h);this.material.uniforms.maxR.value=h*.013}
+  render(renderer,writeBuffer,readBuffer){var u=this.material.uniforms;u.tDiffuse.value=readBuffer.texture;u.tDepth.value=gtao.depthTexture;u.tMask.value=maskRT.texture;
+    u.near.value=camera.near;u.far.value=camera.far;
+    u.maskOnly.value=0;renderer.setRenderTarget(this.renderToScreen?null:writeBuffer);this.fsQuad.render(renderer);
+    u.maskOnly.value=1;renderer.setRenderTarget(maskBlurRT);this.fsQuad.render(renderer)}
+}
 function buildComposer(){
   var rt=new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4});
   composer=new EffectComposer(renderer,rt);
@@ -449,9 +486,10 @@ function buildComposer(){
   maskRT=new THREE.WebGLRenderTarget(4,4);composer.addPass(new SavePass(maskRT));
   gtao=new GTAOPass(scene,camera,4,4);gtao.updateGtaoMaterial({radius:.55,distanceExponent:1.2,thickness:1.2,scale:1.25,samples:12});
   gtao.blendIntensity=1;composer.addPass(gtao);
+  dof=new DofPass();composer.addPass(dof);
   bloom=new UnrealBloomPass(new THREE.Vector2(4,4),.7,.75,.9);composer.addPass(bloom);
   composer.addPass(new OutputPass());
-  finalPass=new ShaderPass(FinalShader);finalPass.uniforms.tMask.value=maskRT.texture;composer.addPass(finalPass);
+  finalPass=new ShaderPass(FinalShader);finalPass.uniforms.tMask.value=maskBlurRT.texture;composer.addPass(finalPass);
 }
 buildComposer();
 function applyQuality(){
@@ -461,7 +499,7 @@ function applyQuality(){
 }
 function resize(){
   var W=innerWidth,H=innerHeight,hi=quality==="high",d=Math.min(devicePixelRatio||1,hi?2:1.25,Math.sqrt((hi?4.2e6:2e6)/(W*H)));
-  renderer.setPixelRatio(d);renderer.setSize(W,H,false);composer.setPixelRatio(d);composer.setSize(W,H);maskRT.setSize(Math.round(W*d),Math.round(H*d));
+  renderer.setPixelRatio(d);renderer.setSize(W,H,false);composer.setPixelRatio(d);composer.setSize(W,H);maskRT.setSize(Math.round(W*d),Math.round(H*d));maskBlurRT.setSize(Math.round(W*d),Math.round(H*d));
   camera.aspect=W/H;camera.fov=W<H?72:55;camera.updateProjectionMatrix();
   var ld=Math.min(devicePixelRatio||1,2);lbv.W=W;lbv.H=H;lbv.dpr=ld;lb.width=W*ld;lb.height=H*ld;
 }
@@ -487,7 +525,7 @@ var ents={}, order=[], me=null, myId=null, isHost=false, roomCode="", video="";
 var cam={yaw:0,pitch:.07,dist:14}, keys={}, moveTarget=null, autoWalk=false, lastInput=0;
 var botTarget=60, botSeq=0, pidSeq=0;
 function addEnt(id,name,bot,x,z,r){
-  var e={id:id,name:name,bot:!!bot,x:x,z:z,r:r,tx:x,tz:z,tr:r,moving:false,look:lookOf(name),parts:null,say:"",sayT:0,ai:null};
+  var e={id:id,name:name,bot:!!bot,x:x,z:z,r:r,tx:x,tz:z,tr:r,y:0,vy:0,moving:false,look:lookOf(name),parts:null,say:"",sayT:0,ai:null};
   ents[id]=e;order=Object.keys(ents);ants.dirty=true;updateCount();return e;
 }
 function delEnt(id){delete ents[id];order=Object.keys(ents);ants.dirty=true;updateCount()}
@@ -508,6 +546,9 @@ function collide(e){
   for(var i=0;i<OBST.length;i++){var o=OBST[i],dx=e.x-o[0],dz=e.z-o[1],d=Math.hypot(dx,dz);
     if(d<o[2]){if(d<.001){dx=1;dz=0;d=1}e.x=o[0]+dx/d*o[2]-dz/d*.04;e.z=o[1]+dz/d*o[2]+dx/d*.04}}
 }
+function jump(e){if(e&&e.y<=.001)e.vy=7.6}
+function doJump(){if(!me||me.y>.001)return;jump(me);if(isHost)castAll({t:"j",id:myId});else if(hostConn)hostConn.send({t:"j"})}
+var joy={x:0,y:0};
 function faceScreen(e){return Math.atan2(SCREEN_C.x-e.x,SCREEN_C.z-e.z)}
 
 /* ───────────── 봇 ───────────── */
@@ -598,11 +639,12 @@ function hostOnConn(c){
       if(humans>=30){c.send({t:"full"});return}
       var nm=clean(m.n,12)||"이름없는개미",p=spawnPos();pid="p"+(++pidSeq);
       var e=addEnt(pid,nm,false,p[0],p[1],Math.PI);conns[pid]=c;c.last=Date.now();
-      c.send({t:"wel",id:pid,vid:video,ps:order.map(function(id){return pack(ents[id])})});
+      c.send({t:"wel",id:pid,vid:video,vt:vtMsg(),ps:order.map(function(id){return pack(ents[id])})});
       castAll({t:"join",p:pack(e)},pid);toast(nm+" 님이 들어왔습니다");
     }else if(pid&&ents[pid]){
       c.last=Date.now();var e2=ents[pid];
       if(m.t==="m"){e2.tx=clamp(+m.x||0,-XMAX,XMAX);e2.tz=clamp(+m.z||0,ZMIN,RD-.8);e2.tr=+m.r||0}
+      else if(m.t==="j"){jump(e2);castAll({t:"j",id:pid},pid)}
       else if(m.t==="c"){var s=clean(m.s,60),now=Date.now();if(s&&now-(c.lastChat||0)>1500){c.lastChat=now;say(pid,s);castAll({t:"c",id:pid,s:s})}}
     }
   };
@@ -613,12 +655,14 @@ function clientOnData(m){
   var i,e;
   if(m.t==="wel"){myId=m.id;ents={};order=[];
     for(i=0;i<m.ps.length;i++){var p=m.ps[i];addEnt(p[0],p[1],p[2],p[3],p[4],p[5])}
-    me=ents[myId];setVideo(m.vid||"",true);enterRoom();
+    me=ents[myId];setVideo(m.vid||"",true);if(m.vt)vsync=mkSync(m.vt);enterRoom();
   }else if(m.t==="join"){var q=m.p;if(!ents[q[0]])addEnt(q[0],q[1],q[2],q[3],q[4],q[5])}
   else if(m.t==="left"){if(m.id!==myId)delEnt(m.id)}
   else if(m.t==="s"){var a=m.a;for(i=0;i<a.length;i+=4){e=ents[a[i]];if(e&&e!==me){e.tx=a[i+1];e.tz=a[i+2];e.tr=a[i+3]}}}
   else if(m.t==="c"){say(m.id,clean(m.s,60))}
   else if(m.t==="vid"){setVideo(m.v||"",true)}
+  else if(m.t==="j"){if(m.id!==myId)jump(ents[m.id])}
+  else if(m.t==="vt"){vsync=mkSync(m)}
   else if(m.t==="full"){fail("방이 가득 찼습니다.")}
 }
 function say(id,s){var e=ents[id];if(e){e.say=s;e.sayT=performance.now()+5500}}
@@ -626,7 +670,7 @@ function say(id,s){var e=ents[id];if(e){e.say=s;e.sayT=performance.now()+5500}}
 /* 방장 시뮬레이션·중계: 탭이 뒤로 가도 돌도록 setInterval */
 var simLast=0,botSayT=0,sendT=0;
 function tick(){
-  var now=performance.now(),dt=Math.min(1,(now-simLast)/1000);simLast=now;
+  var now=performance.now(),dt=Math.min(1,(now-simLast)/1000);simLast=now;ytPoll(now);
   if(isHost){
     for(var i=0;i<order.length;i++){var e=ents[order[i]];if(e.bot)wander(e,dt,2.1)}
     if(now>botSayT){botSayT=now+2500+Math.random()*5000;
@@ -634,6 +678,8 @@ function tick(){
       if(bots.length){var b=bots[(Math.random()*bots.length)|0],s=BOTSAY[(Math.random()*BOTSAY.length)|0];say(b,s);castAll({t:"c",id:b,s:s})}}
     var a=[];for(i=0;i<order.length;i++){e=ents[order[i]];a.push(e.id,+e.x.toFixed(2),+e.z.toFixed(2),+e.r.toFixed(2))}
     castAll({t:"s",a:a});
+    if(now-vtLast>3000){vtLast=now;var vm=vtMsg();if(vm)castAll(vm)}
+    if(Math.random()<.03&&order.length){var jb=ents[order[(Math.random()*order.length)|0]];if(jb.bot&&jb.y<=.001){jump(jb);castAll({t:"j",id:jb.id})}}
     var t=Date.now();for(var k in conns)if(t-conns[k].last>20000&&conns[k].onclose)conns[k].onclose();
   }else if(hostConn&&me){
     hostConn.send({t:"m",x:+me.x.toFixed(2),z:+me.z.toFixed(2),r:+me.r.toFixed(2)});
@@ -645,14 +691,38 @@ function tick(){
 function ytId(s){s=clean(s,200);if(!s)return "";
   var m=s.match(/(?:youtu\.be\/|[?&]v=|\/live\/|\/embed\/|\/shorts\/)([\w-]{11})/);if(m)return m[1];
   var l=s.match(/[?&]list=([\w-]{10,64})/);if(l)return "list:"+l[1];
+  var ch=s.match(/(?:channel\/|^)(UC[\w-]{22})(?:[\/?]|$)/);if(ch)return "live:"+ch[1];
   return /^[\w-]{11}$/.test(s)?s:""}
 var ytFrame=null,muted=true;
+/* 방송 시각 동기화: 유튜브 플레이어가 알려주는 재생 위치를 방장이 주기적으로 보내고, 참가자는 어긋나면 그 위치로 맞춘다 */
+var yt={ok:false,t:0,at:0,st:-1,pi:-1,live:false,lsn:0},vsync=null,vtLast=0,seekLast=0;
+addEventListener("message",function(ev){
+  if(ev.origin!=="https://www.youtube.com"||!ytFrame||ev.source!==ytFrame.contentWindow)return;var d;
+  try{d=typeof ev.data==="string"?JSON.parse(ev.data):ev.data}catch(_){return}
+  if(!d||!d.info)return;var i=d.info;yt.ok=true;
+  if(typeof i.currentTime==="number"){yt.t=i.currentTime;yt.at=performance.now()}
+  if(typeof i.playerState==="number")yt.st=i.playerState;if(typeof i.playlistIndex==="number")yt.pi=i.playlistIndex;
+  if(i.videoData&&typeof i.videoData.isLive==="boolean")yt.live=i.videoData.isLive});
+function ytNow(){return yt.t+(yt.st===1?(performance.now()-yt.at)/1000:0)}
+function vtMsg(){return yt.ok&&video?{t:"vt",p:+ytNow().toFixed(2),st:yt.st,pi:yt.pi,live:yt.live}:null}
+function mkSync(m){return {p:+m.p||0,st:m.st|0,pi:typeof m.pi==="number"?m.pi:-1,live:!!m.live,at:performance.now()}}
+function ytPoll(now){
+  if(!ytFrame||!ytFrame.contentWindow)return;
+  if(!yt.ok&&now-yt.lsn>700){yt.lsn=now;ytFrame.contentWindow.postMessage(JSON.stringify({event:"listening",id:1,channel:"widget"}),"*")}
+  if(isHost||!vsync||!yt.ok||now-vsync.at>12000)return;
+  var live=vsync.live||yt.live,cool=live?20000:4000;if(now-seekLast<cool)return;
+  if(vsync.pi>=0&&yt.pi>=0&&vsync.pi!==yt.pi&&video.indexOf("list:")===0){ytCmd("playVideoAt",[vsync.pi]);seekLast=now;return}
+  if(vsync.st===2&&yt.st===1){ytCmd("pauseVideo");seekLast=now-cool+1500;return}
+  if(vsync.st===1&&(yt.st===2||yt.st===5||yt.st===-1)){ytCmd("playVideo");seekLast=now-cool+1500;return}
+  var want=vsync.p+(vsync.st===1?(now-vsync.at)/1000:0);
+  if(yt.st===1&&Math.abs(ytNow()-want)>(live?12:2.5)){ytCmd("seekTo",[want+.4,true]);seekLast=now}
+}
 function setVideo(id,fromNet){
-  video=/^(list:[\w-]{10,64}|[\w-]{11})$/.test(id||"")?id:"";var w=$("ytwrap");w.innerHTML="";ytFrame=null;muted=true;$("bSound").textContent="소리 켜기";$("bSound").classList.remove("on");
+  video=/^(list:[\w-]{10,64}|live:UC[\w-]{22}|[\w-]{11})$/.test(id||"")?id:"";yt.ok=false;yt.st=-1;yt.pi=-1;yt.t=0;yt.live=false;vsync=null;var w=$("ytwrap");w.innerHTML="";ytFrame=null;muted=true;$("bSound").textContent="소리 켜기";$("bSound").classList.remove("on");
   if(video){
     var f=document.createElement("iframe"),q="autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0";
     if(/^https?:$/.test(location.protocol))q+="&origin="+encodeURIComponent(location.origin);
-    f.src="https://www.youtube.com/embed/"+(video.indexOf("list:")===0?"videoseries?list="+video.slice(5)+"&":video+"?")+q;
+    f.src="https://www.youtube.com/embed/"+(video.indexOf("list:")===0?"videoseries?list="+video.slice(5)+"&":video.indexOf("live:")===0?"live_stream?channel="+video.slice(5)+"&":video+"?")+q;
     f.allow="autoplay; encrypted-media; picture-in-picture; fullscreen";f.referrerPolicy="strict-origin-when-cross-origin";
     f.title="유튜브 방송";w.appendChild(f);ytFrame=f;
   }
@@ -699,10 +769,10 @@ function frame(ts){
   var i,e,W=lbv.W,H=lbv.H;
   // 내 개미 이동
   if(me){
-    var ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0), iz=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
-    if(ix||iz){moveTarget=null;lastInput=ts;if(me.ai)me.ai.wait=0;
+    var ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+joy.x, iz=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)+joy.y,spd=5.2*Math.min(1,Math.hypot(ix,iz));
+    if(Math.hypot(ix,iz)>.15){moveTarget=null;lastInput=ts;if(me.ai)me.ai.wait=0;
       var fx=-Math.sin(cam.yaw),fz=-Math.cos(cam.yaw),rx=Math.cos(cam.yaw),rz=-Math.sin(cam.yaw);
-      var dx=fx*iz+rx*ix,dz=fz*iz+rz*ix,L=Math.hypot(dx,dz);me.x+=dx/L*5.2*dt;me.z+=dz/L*5.2*dt;me.r=Math.atan2(dx,dz);me.moving=true;
+      var dx=fx*iz+rx*ix,dz=fz*iz+rz*ix,L=Math.hypot(dx,dz);me.x+=dx/L*spd*dt;me.z+=dz/L*spd*dt;me.r=Math.atan2(dx,dz);me.moving=true;
     }else if(moveTarget){
       var mx=moveTarget[0]-me.x,mz=moveTarget[1]-me.z,ML=Math.hypot(mx,mz);
       if(ML<.12){moveTarget=null;me.moving=false}else{var st=Math.min(ML,5.2*dt);me.x+=mx/ML*st;me.z+=mz/ML*st;me.r=Math.atan2(mx,mz);me.moving=true}
@@ -712,7 +782,9 @@ function frame(ts){
   }
   // 다른 개미 보간
   var list=[];
-  for(i=0;i<order.length;i++){e=ents[order[i]];list.push(e);if(e===me||(isHost&&e.bot))continue;
+  for(i=0;i<order.length;i++){e=ents[order[i]];list.push(e);
+    if(e.vy||e.y>0){e.vy-=24*dt;e.y+=e.vy*dt;if(e.y<=0){e.y=0;e.vy=0}}       // 점프
+    if(e===me||(isHost&&e.bot))continue;
     var ddx=e.tx-e.x,ddz=e.tz-e.z,D=Math.hypot(ddx,ddz),kk=Math.min(1,dt*9);
     e.moving=D>.06;e.x+=ddx*kk;e.z+=ddz*kk;var dr=Math.atan2(Math.sin(e.tr-e.r),Math.cos(e.tr-e.r));e.r+=dr*Math.min(1,dt*10)}
   // 카메라 (방 안에 머물도록 제한)
@@ -720,6 +792,7 @@ function frame(ts){
   var cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
   camera.position.set(clamp(_T.x+cam.dist*Math.sin(cam.yaw)*cp,-RW+.8,RW-.8),clamp(_T.y+cam.dist*sp,1,RH-.9),clamp(_T.z+cam.dist*Math.cos(cam.yaw)*cp,-RD+.8,RD-.8));
   camera.lookAt(_T);camera.updateMatrixWorld();
+  var focusD=me?camera.position.distanceTo(_c.set(me.x,1.2,me.z)):14;if(dof)dof.material.uniforms.focus.value=focusD;
   ants.update(list,time);
   // 스크린: 유튜브 iframe을 3D 스크린 위치에 맞춤
   var ps=[],ok=!!(video&&ytFrame);
@@ -730,9 +803,10 @@ function frame(ts){
   tkTex.offset.x=time*.035;tkSide.offset.x=time*.02;drawBoard(time);drawClock();screenLight.intensity=4.2+Math.sin(time*1.7)*.35+Math.sin(time*4.3)*.15;
   if(quality==="high"){finalPass.uniforms.time.value=time%10;composer.render()}else renderer.render(scene,camera);
   // 이름표 (2D 오버레이)
-  var g=lbv.ctx,focal=(H/2)/Math.tan(camera.fov*Math.PI/360),labels=[];
+  var now0=performance.now(),g=lbv.ctx,focal=(H/2)/Math.tan(camera.fov*Math.PI/360),labels=[];
   g.setTransform(lbv.dpr,0,0,lbv.dpr,0,0);g.clearRect(0,0,W,H);
-  for(i=0;i<list.length;i++){e=list[i];_c.set(e.x,antTop(e),e.z).applyMatrix4(camera.matrixWorldInverse);var dep=-_c.z;if(dep<1.2)continue;
+  for(i=0;i<list.length;i++){e=list[i];_c.set(e.x,antTop(e)+e.y,e.z).applyMatrix4(camera.matrixWorldInverse);var dep=-_c.z;if(dep<1.2)continue;
+    if(e.bot&&!(e.say&&now0<e.sayT)&&(dep-focusD>9||focusD-dep>5))continue;      // 초점 밖 봇은 이름표 생략
     _c.applyMatrix4(camera.projectionMatrix);labels.push([e,{x:(_c.x*.5+.5)*W,y:(.5-_c.y*.5)*H,z:dep,k:focal/dep}])}
   labels.sort(function(a,b){return b[1].z-a[1].z});
   var now=performance.now(),kept=[],show=[],j;
@@ -750,7 +824,7 @@ addEventListener("keydown",function(ev){
   if(!inRoom)return;var k=ev.key.toLowerCase(),inInput=/input|textarea/i.test(document.activeElement.tagName);
   if(k==="enter"&&!inInput){$("chat").focus();ev.preventDefault();return}
   if(k==="escape"){document.activeElement.blur();$("pop").classList.remove("show");return}
-  if(inInput)return;keys[k]=true;if(k.indexOf("arrow")===0)ev.preventDefault()});
+  if(inInput)return;if(k===" "){doJump();ev.preventDefault();return}keys[k]=true;if(k.indexOf("arrow")===0)ev.preventDefault()});
 addEventListener("keyup",function(ev){keys[ev.key.toLowerCase()]=false});
 addEventListener("blur",function(){keys={}});
 (function(){
@@ -773,7 +847,7 @@ var chatLast=0;
 $("chatbar").addEventListener("submit",function(ev){ev.preventDefault();
   var s=clean($("chat").value,60);if(!s||!me)return;var now=Date.now();
   if(now-chatLast<2000){toast("조금 뒤에 다시 쓸 수 있어요");return}
-  chatLast=now;$("chat").value="";
+  chatLast=now;$("chat").value="";if(isTouch){document.body.classList.remove("chat");$("chat").blur()}
   if(isHost){say(myId,s);castAll({t:"c",id:myId,s:s})}else if(hostConn)hostConn.send({t:"c",s:s});
 });
 function inviteLink(){return location.href.split("#")[0]+"#room-"+roomCode}
@@ -791,6 +865,25 @@ $("ytGo").onclick=function(){var raw=$("yt").value,id=ytId(raw);
   if(raw.trim()&&!id){toast("유튜브 주소를 알아보지 못했습니다");return}
   setVideo(id);toast(id?"방송을 틀었습니다":"방송을 껐습니다")};
 $("ytDef").onclick=function(){$("yt").value="";setVideo(DEFAULT_VIDEO);toast("슈카월드 최신 영상을 틀었습니다")};
+$("ytLive").onclick=function(){$("yt").value="";setVideo("live:UCsJ6RuBiTVWRX156FVbeaGg");toast("슈카월드 실시간 방송에 연결했습니다 (방송 중일 때만 나옵니다)",4000)};
+/* 모바일 가상 패드 */
+var isTouch=false;try{isTouch=matchMedia("(pointer:coarse)").matches}catch(_){}
+function touchOn(){if(!isTouch){isTouch=true}document.body.classList.add("touch")}
+if(isTouch)touchOn();addEventListener("touchstart",touchOn,{once:true,passive:true});
+(function(){
+  var j=$("joy"),kn=$("knob"),id=null;
+  function mv(ev){var r=j.getBoundingClientRect(),x=ev.clientX-(r.left+r.width/2),y=ev.clientY-(r.top+r.height/2),R=r.width/2-18,L=Math.hypot(x,y);
+    if(L>R){x*=R/L;y*=R/L}kn.style.transform="translate("+x+"px,"+y+"px)";joy.x=x/R;joy.y=-y/R}
+  function up(){id=null;joy.x=joy.y=0;kn.style.transform=""}
+  j.addEventListener("pointerdown",function(ev){id=ev.pointerId;j.setPointerCapture(id);mv(ev);ev.preventDefault()});
+  j.addEventListener("pointermove",function(ev){if(ev.pointerId===id)mv(ev)});
+  j.addEventListener("pointerup",up);j.addEventListener("pointercancel",up);
+  function btn(el,fn){$(el).addEventListener("pointerdown",function(ev){ev.preventDefault();fn()})}
+  btn("pA",doJump);
+  btn("pB",function(){$("bWalk").click();toast(autoWalk?"자동 산책 켬":"자동 산책 끔",1200)});
+  btn("pX",function(){var on=document.body.classList.toggle("chat");if(on)$("chat").focus();else $("chat").blur()});
+  btn("pY",function(){cam.yaw=0;cam.pitch=.07;cam.dist=14});
+})();
 $("bQ").onclick=function(){quality=quality==="high"?"low":"high";try{localStorage.setItem("antq",quality)}catch(_){}applyQuality()};
 $("bots").oninput=function(){$("botsN").textContent=this.value;setBots(+this.value)};
 
@@ -811,7 +904,7 @@ function startHost(name){
   roomCode="";var al="abcdefghjkmnpqrstuvwxyz23456789";for(var i=0;i<6;i++)roomCode+=al[(Math.random()*al.length)|0];
   status("방을 만드는 중...");
   var ready=function(online){
-    isHost=true;myId="h";var p=spawnPos();me=addEnt("h",name,false,p[0]*.3,8,Math.PI);setBots(botTarget);setVideo(DEFAULT_VIDEO);
+    isHost=true;myId="h";var p=spawnPos();me=addEnt("h",name,false,p[0]*.3,8,Math.PI);setBots(botTarget);var qv="";try{qv=ytId(new URLSearchParams(location.search).get("yt")||"")}catch(_){}setVideo(qv||DEFAULT_VIDEO);
     try{history.replaceState(null,"","#room-"+roomCode)}catch(_){location.hash="room-"+roomCode}
     enterRoom();
     if(!online)toast("연결 서버에 닿지 못했습니다. 지금은 혼자 보기 모드입니다.",6000);
@@ -833,7 +926,7 @@ $("alt").onclick=function(){joinCode="";this.style.display="none";$("go").textCo
 if(joinCode){$("go").textContent="입장하기";$("alt").style.display="";status("초대받은 방: "+joinCode)}else $("go").textContent="방 만들기";
 $("name").focus();
 requestAnimationFrame(frame);
-window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality}};
+window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality},yt:yt,sync:function(){return vsync},ytNow:ytNow,jump:doJump};
 </script>
 </body>
 </html>
