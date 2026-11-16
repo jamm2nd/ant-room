@@ -17,6 +17,41 @@
   #ytwrap iframe{width:100%;height:100%;border:0;display:block}
   #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
   #cv.pass{pointer-events:none}
+  #log{position:absolute;left:14px;bottom:78px;width:min(340px,46vw);max-height:230px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 34%);mask-image:linear-gradient(to bottom,transparent 0,#000 34%)}
+  #log .ln{font-size:13.5px;line-height:1.45;margin-top:3px;padding:3px 9px;border-radius:9px;background:rgba(10,12,17,.55);color:#f2f4f8;align-self:flex-start;max-width:100%;overflow-wrap:anywhere;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  #log .ln b{font-weight:800;margin-right:2px}
+  #log .ln.bot{background:rgba(10,12,17,.3);color:#aab2c0;font-size:12.5px}
+  #log .ln.bot b{color:#8f98a8}
+  #log .ln.me{background:rgba(60,42,0,.7)}
+  #log .ln.big{font-size:22px;font-weight:800}
+  #log .ln.sys{background:transparent;color:#8f98a8;font-size:12px;padding:1px 9px}
+  #hot{position:absolute;right:16px;bottom:82px;display:flex;gap:8px}
+  #hot button{position:relative;width:62px;height:62px;border-radius:14px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  #hot button:hover{border-color:rgba(255,255,255,.35)}
+  #hot .ic{font-style:normal;font-size:28px;line-height:1}
+  #hot .ky{position:absolute;left:6px;top:4px;font-size:11px;color:var(--dim);font-weight:700}
+  #hot .ct{position:absolute;right:6px;bottom:3px;font-size:11px;color:var(--amber);font-weight:700}
+  #hot button.cool,#btns button.cool{opacity:.4}
+  #inv{position:absolute;right:14px;top:64px;width:min(360px,calc(100vw - 28px));background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;font-size:13px}
+  #inv.show{display:block}
+  #inv h3{margin:0 0 10px;font-size:14px}
+  #inv p{color:var(--dim);margin:10px 0 0;line-height:1.5}
+  #inv .it{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  #inv .it .ic{font-size:26px;width:34px;text-align:center}
+  #inv .it .tx{flex:1;min-width:0}
+  #inv .it small{display:block;color:var(--dim);margin-top:2px}
+  #inv .bs{display:flex;gap:4px}
+  #inv .bs button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.06);font-weight:700}
+  #inv .bs button.on{background:var(--amber);color:#201600;border-color:var(--amber)}
+  #bChat{display:none}
+  body.touch #bChat{display:inline-block}
+  body.touch #hot{display:none}
+  body.touch #log{bottom:176px;max-height:150px;width:min(300px,62vw)}
+  #btns button{font-size:24px!important}
+  #pA{font-size:13px!important}
+  @media (max-width:1180px){#inv{top:150px}}
   #pad{display:none}
   body.touch #pad{display:block}
   body.touch #hint{display:none}
@@ -90,6 +125,8 @@
     <button class="pill" id="bSound">소리 켜기</button>
     <button class="pill" id="bPass" title="켜면 유튜브 화면을 직접 클릭할 수 있습니다">화면 직접 조작</button>
     <button class="pill" id="bWalk">자동 산책</button>
+    <button class="pill" id="bInv">가방</button>
+    <button class="pill" id="bChat">채팅</button>
     <button class="pill" id="bQ">그래픽: 고급</button>
     <button class="pill" id="bSet">방 설정</button>
   </div>
@@ -109,9 +146,11 @@
   <div id="toast" class="pill"></div>
   <div id="pad">
     <div id="joy"><div id="knob"></div></div>
-    <div id="btns"><button id="pY">시점</button><button id="pX">채팅</button><button id="pB">산책</button><button id="pA">점프</button></div>
+    <div id="btns"><button id="pY">·</button><button id="pX">·</button><button id="pB">·</button><button id="pA">점프</button></div>
   </div>
-  <div id="hint">이동: WASD · 방향키 · 바닥 클릭<br>점프: 스페이스<br>시점: 드래그 · 휠<br>채팅: Enter</div>
+  <div id="log" aria-live="polite"></div>
+  <div id="hot"><button><i class="ic"></i><span class="ky">1</span><span class="ct"></span></button><button><i class="ic"></i><span class="ky">2</span><span class="ct"></span></button><button><i class="ic"></i><span class="ky">3</span><span class="ct"></span></button></div>
+  <div id="inv"><h3>가방</h3><div id="invList"></div><p>숫자 버튼을 누르면 그 단축 버튼에 배정됩니다. PC는 1 · 2 · 3 키, 모바일은 오른쪽 패드의 세 버튼입니다. 지금은 시험용으로 99개씩 들어 있습니다.</p></div>
   <form id="chatbar" class="pill" autocomplete="off">
     <input id="chat" maxlength="60" placeholder="한마디 남기기">
     <button type="submit" aria-label="보내기">→</button>
@@ -387,7 +426,7 @@ function buildVox(L){
   // 가슴: 넥타이
   blob(part([0,.80,-.04]),0,0,0,.22,.23,.2,2.3,function(mi,j,k,front){return (L.acc==="tie"&&front&&mi===0&&j>=-NV(.2)&&j<=1)?V_RED:body});
   // 머리: 얼굴을 겉면에 그린다
-  var H=part([0,1.33,.06],null,4),big=L.eye>1.02,hry=.32*h,ny=Math.ceil(hry/VS);
+  var H=part([0,1.33,.06],null,4),big=L.eye>1.02,hry=.32*h,ny=Math.ceil(hry/VS);H.h=1;
   blob(H,0,0,0,.35*h,hry,.32*h,3.2,function(mi,j,k,front){
     if(L.acc==="band"&&j===ny-2)return V_RED;
     if(front){
@@ -410,11 +449,11 @@ function buildVox(L){
     var leg=part([sx*.15,.58,-.04],null,sx<0?1:2);for(i=0;i<NV(.56);i++)put(leg,0,-(i+.5)*VS,0,dark);put(leg,0,-(NV(.56)-.5)*VS,VS,dark);
     var arm=part([sx*.27,.93,0],[0,0,sx*.32],sx<0?2:1);for(i=0;i<NV(.42);i++)put(arm,0,-(i+.5)*VS,0,dark);
     var mid=part([sx*.25,.72,-.08],[0,0,sx*.85]);for(i=0;i<NV(.3);i++)put(mid,0,-(i+.5)*VS,0,dark);
-    var n=NV(.42*L.ant),an=part([sx*.14,1.33+top-.04,.12],[-.22,0,-sx*(.24+.14*L.antSpread)],3);
+    var n=NV(.42*L.ant),an=part([sx*.14,1.33+top-.04,.12],[-.22,0,-sx*(.24+.14*L.antSpread)],3);an.h=1;
     for(i=0;i<n;i++)put(an,0,(i+.5)*VS,(i/n)*(i/n)*.12,dark);put(an,0,(n+.5)*VS,.12,dark,1.5);put(an,0,(n+.5)*VS,.12+VS,dark,1.5);
   }
   var tot=0;for(i=0;i<parts.length;i++){parts[i].v=new Float32Array(parts[i].v);parts[i].c=new Float32Array(parts[i].c);tot+=parts[i].v.length/3}
-  parts.n=tot;return parts;
+  parts.n=tot;parts.hb=[0,1.33-hry,.06];return parts;
 }
 function AntMesh(max){
   this.cap=max*VMAX;this.mesh=new THREE.InstancedMesh(boxGeo,antMat,this.cap);this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -423,14 +462,21 @@ function AntMesh(max){
 }
 var _A=new THREE.Matrix4(),_J=new THREE.Matrix4(),_W=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_v=new THREE.Vector3(),_s=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
 AntMesh.prototype.update=function(list,time){
-  var m=this.mesh,arr=m.instanceMatrix.array,col=m.instanceColor.array,cap=this.cap,dirty=this.dirty,idx=0,i,j,k,e,P,q,L,s,walk,bob,ax,w,v,c,n,o,x,y,z,vs=VS*1.02;
+  var now=performance.now(),hk,hb,px,py,pz,m=this.mesh,arr=m.instanceMatrix.array,col=m.instanceColor.array,cap=this.cap,dirty=this.dirty,sig=0,idx=0,i,j,k,e,P,q,L,s,walk,bob,ax,w,v,c,n,o,x,y,z,vs=VS*1.02;
+  for(i=0;i<list.length;i++){e=list[i];if(e.deadT>now||(e.blinkT>now&&((now/110|0)&1)===1))sig+=i+1}
+  if(sig!==this.sig){this.sig=sig;dirty=true}                                  // 숨은 개미가 바뀌면 색 버퍼를 다시 채운다
   for(i=0;i<list.length;i++){
     e=list[i];L=e.look;s=L.scale;if(!e.parts)e.parts=buildVox(L);P=e.parts;if(idx+P.n>cap)break;
+    if(e.deadT>now||(e.blinkT>now&&((now/110|0)&1)===1))continue;      // 자폭 후 숨김·점멸
+    hk=e.bigT?bigK(e,now):1;hb=P.hb;
     walk=e.moving?Math.sin(time*11+L.phase):0;bob=e.moving?Math.abs(Math.sin(time*11+L.phase))*.07:Math.sin(time*2+L.phase)*.012;
     _A.compose(_v.set(e.x,(e.y||0)+bob*s,e.z),_q.setFromAxisAngle(_up,e.r),_s.set(s,s*(1+clamp((e.vy||0)*.014,-.1,.14)),s));
     for(j=0;j<P.length;j++){
       q=P[j];ax=q.a===1?walk*.75:q.a===2?-walk*.75:0;
-      _J.makeRotationFromEuler(_e.set(q.r[0]+ax,q.a===4?Math.sin(time*.8+L.phase)*.22:0,q.r[2]+(q.a===3?Math.sin(time*3+L.phase)*.07:0))).setPosition(q.p[0],q.p[1],q.p[2]);
+      px=q.p[0];py=q.p[1];pz=q.p[2];
+      _J.makeRotationFromEuler(_e.set(q.r[0]+ax,q.a===4?Math.sin(time*.8+L.phase)*.22:0,q.r[2]+(q.a===3?Math.sin(time*3+L.phase)*.07:0)));
+      if(q.h&&hk!==1){px=hb[0]+(px-hb[0])*hk;py=hb[1]+(py-hb[1])*hk;pz=hb[2]+(pz-hb[2])*hk;_J.scale(_s.set(hk,hk,hk))}   // 왕머리
+      _J.setPosition(px,py,pz);
       w=_W.multiplyMatrices(_A,_J).elements;v=q.v;c=q.c;n=v.length/3;
       for(k=0;k<n;k++,idx++){o=idx*16;x=v[k*3];y=v[k*3+1];z=v[k*3+2];
         arr[o]=w[0]*vs;arr[o+1]=w[1]*vs;arr[o+2]=w[2]*vs;arr[o+3]=0;arr[o+4]=w[4]*vs;arr[o+5]=w[5]*vs;arr[o+6]=w[6]*vs;arr[o+7]=0;
@@ -551,6 +597,102 @@ function doJump(){if(!me||me.y>.001)return;jump(me);if(isHost)castAll({t:"j",id:
 var joy={x:0,y:0};
 function faceScreen(e){return Math.atan2(SCREEN_C.x-e.x,SCREEN_C.z-e.z)}
 
+
+/* ───────────── 이펙트: 복셀 파티클 · 섬광 · 화면 흔들림 ───────────── */
+var PMAX=2600,parts=[],pMesh=new THREE.InstancedMesh(boxGeo,new THREE.MeshBasicMaterial({fog:false}),PMAX);
+pMesh.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(PMAX*3),3);pMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+pMesh.frustumCulled=false;pMesh.count=0;scene.add(pMesh);
+var flashes=[];(function(){for(var i=0;i<3;i++){var l=new THREE.PointLight(0xffffff,0,26,2);scene.add(l);flashes.push(l)}})();
+var flashI=0,shake=0;
+function flash(x,y,z,r,g,b,power){var l=flashes[flashI++%flashes.length];l.position.set(x,y,z);l.color.setRGB(r,g,b);l.intensity=power}
+function spawn(x,y,z,vx,vy,vz,life,size,r,g,b,grav,kind){
+  if(parts.length>=PMAX)return;parts.push({x:x,y:y,z:z,vx:vx,vy:vy,vz:vz,life:life,max:life,s:size,r:r,g:g,b:b,grav:grav,kind:kind||0})}
+var FW_COL=[[3.2,.5,.4],[.5,1.6,3.2],[3,2.2,.4],[.6,3,1],[3,.6,2.6],[3,3,3]];
+function burst(x,y,z){
+  var c1=FW_COL[(Math.random()*FW_COL.length)|0],c2=FW_COL[(Math.random()*FW_COL.length)|0],i,c,u,th,sp,sr;
+  for(i=0;i<130;i++){c=i%3?c1:c2;u=Math.random()*2-1;th=Math.random()*6.283;sp=4.5+Math.random()*5.5;sr=Math.sqrt(1-u*u);
+    spawn(x,y,z,Math.cos(th)*sr*sp,u*sp,Math.sin(th)*sr*sp,1+Math.random()*.8,.13,c[0],c[1],c[2],5,2)}
+  flash(x,y,z,c1[0],c1[1],c1[2],150);
+}
+function updateFx(dt){
+  var arr=pMesh.instanceMatrix.array,col=pMesh.instanceColor.array,n=0,i,p,k,o,s;
+  for(i=0;i<parts.length;i++){p=parts[i];p.life-=dt;
+    if(p.life<=0){if(p.kind===1)burst(p.x,p.y,p.z);continue}
+    p.vy-=p.grav*dt;if(p.kind===2){k=Math.pow(.25,dt);p.vx*=k;p.vy*=k;p.vz*=k}
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+    if(p.kind===3&&p.y<.07){p.y=.07;p.vy*=-.35;p.vx*=.6;p.vz*=.6}                               // 파편은 바닥에서 튄다
+    if(p.kind===1&&Math.random()<dt*60)spawn(p.x,p.y,p.z,(Math.random()-.5),-1,(Math.random()-.5),.35,.08,3,2,.8,2,0);   // 로켓 꼬리
+    parts[n]=p;s=p.s*Math.min(1,p.life/p.max*2.2);o=n*16;
+    arr[o]=s;arr[o+1]=0;arr[o+2]=0;arr[o+3]=0;arr[o+4]=0;arr[o+5]=s;arr[o+6]=0;arr[o+7]=0;arr[o+8]=0;arr[o+9]=0;arr[o+10]=s;arr[o+11]=0;
+    arr[o+12]=p.x;arr[o+13]=p.y;arr[o+14]=p.z;arr[o+15]=1;col[n*3]=p.r;col[n*3+1]=p.g;col[n*3+2]=p.b;n++}
+  parts.length=n;pMesh.count=n;
+  if(n){pMesh.instanceMatrix.clearUpdateRanges();pMesh.instanceMatrix.addUpdateRange(0,n*16);pMesh.instanceMatrix.needsUpdate=true;
+    pMesh.instanceColor.clearUpdateRanges();pMesh.instanceColor.addUpdateRange(0,n*3);pMesh.instanceColor.needsUpdate=true}
+  for(i=0;i<flashes.length;i++)if(flashes[i].intensity>.5)flashes[i].intensity*=Math.pow(.004,dt);else flashes[i].intensity=0;
+  shake*=Math.pow(.02,dt);
+}
+
+/* ───────────── 아이템 ─────────────
+   나중에 구매를 붙일 수 있게 목록·보유 수량·버튼 배정을 분리해 둔다 */
+var ITEMS={
+  fw:  {n:"폭죽",  i:"🎆",cd:1500,d:"머리 위로 쏘아 올려 터뜨립니다"},
+  big: {n:"왕머리",i:"🗣️",cd:8000,d:"5초 동안 머리와 채팅 글자가 커집니다"},
+  boom:{n:"자폭",  i:"💥",cd:6000,d:"터진 뒤 3초 동안 깜빡이며 부활합니다"}
+};
+var inv={fw:99,big:99,boom:99},bind=["fw","big","boom"],cdUntil={};
+try{var sb=JSON.parse(localStorage.getItem("antbind")||"null");if(sb&&sb.length===3)bind=sb.map(function(k){return ITEMS[k]?k:null})}catch(_){}
+function bigK(e,now){if(!e.bigT)return 1;var te=e.bigT-now;if(te<=0){e.bigT=0;return 1}return 1+Math.min(1,(now-e.bigS)/180)*Math.min(1,te/250)}
+function hiddenNow(e,now){return e.deadT>now||(e.blinkT>now&&((now/110|0)&1)===1)}
+function applyFx(id,k){
+  var e=ents[id],now=performance.now(),s,i,o,d;if(!e||!ITEMS[k]||e.deadT>now)return;s=e.look.scale;
+  if(k==="fw"){spawn(e.x,2.2*s+e.y,e.z,(Math.random()-.5)*1.5,15+Math.random()*2,(Math.random()-.5)*1.5,.62+Math.random()*.12,.16,3,2.4,1.2,7,1)}
+  else if(k==="big"){e.bigS=now;e.bigT=now+5000}
+  else if(k==="boom"){
+    var P=e.parts||[],cnt=0,j,q,step;                                                        // 자기 몸 복셀이 파편으로 튄다
+    for(i=0;i<P.length;i++){q=P[i];step=Math.max(1,(q.v.length/3/26)|0);
+      for(j=0;j<q.v.length/3&&cnt<150;j+=step,cnt++)spawn(e.x+(Math.random()-.5)*.5*s,(.3+Math.random()*1.3)*s,e.z+(Math.random()-.5)*.5*s,
+        (Math.random()-.5)*11,3+Math.random()*9,(Math.random()-.5)*11,1.3+Math.random()*.9,.1*s,q.c[j*3],q.c[j*3+1],q.c[j*3+2],20,3)}
+    for(i=0;i<70;i++)spawn(e.x,1*s,e.z,(Math.random()-.5)*14,2+Math.random()*10,(Math.random()-.5)*14,.4+Math.random()*.5,.14,3.4,1.6+Math.random(),.3,9,2);
+    flash(e.x,1.5,e.z,3,1.6,.6,240);e.deadT=now+1000;e.blinkT=now+4000;e.bigT=0;e.y=0;e.vy=0;
+    if(me){d=Math.hypot(me.x-e.x,me.z-e.z);if(d<14)shake=Math.max(shake,.55*(1-d/14))}
+    for(i=0;i<order.length;i++){o=ents[order[i]];if(o===e||o.deadT>now)continue;d=Math.hypot(o.x-e.x,o.z-e.z);if(d<4.5&&o.y<=.001)o.vy=5+4*(1-d/4.5)}   // 주변 개미는 튕겨 오른다
+  }
+  if(!e.bot)logSys(ITEMS[k].i+" "+e.name+" · "+ITEMS[k].n);
+}
+function useSlot(i){
+  var k=bind[i],now=performance.now();if(!me||!k)return toast("이 버튼에는 아이템이 없습니다. 가방에서 배정해 주세요",2200);
+  if(me.deadT>now)return;if(inv[k]<=0)return toast(ITEMS[k].n+"이(가) 다 떨어졌습니다",1800);
+  if((cdUntil[k]||0)>now)return;
+  cdUntil[k]=now+ITEMS[k].cd;inv[k]--;applyFx(myId,k);
+  if(isHost)castAll({t:"fx",id:myId,k:k});else if(hostConn)hostConn.send({t:"fx",k:k});
+  renderHot();
+}
+
+/* ───────────── 채팅 로그 ───────────── */
+function logAdd(el){var L=$("log");L.appendChild(el);while(L.children.length>40)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}
+function logChat(e,s){
+  if(e.bot)return;                                   // 봇 잡담은 말풍선으로만, 로그에는 사람 대화만
+  var d=document.createElement("div"),b=document.createElement("b");d.className="ln"+(e.bot?" bot":"")+(e===me?" me":"")+(e.bigT>performance.now()?" big":"");
+  b.textContent=e.name;b.style.color=e.bot?"":e.look.color;d.appendChild(b);d.appendChild(document.createTextNode(" "+s));logAdd(d)}
+function logSys(s){var d=document.createElement("div");d.className="ln sys";d.textContent=s;logAdd(d)}
+
+/* ───────────── 가방 · 단축 버튼 ───────────── */
+var SLOT_KEYS=["1","2","3"],SLOT_PAD=["pB","pX","pY"];
+function renderHot(){
+  var now=performance.now(),i,k,it,cool,h=$("hot").children,p;
+  for(i=0;i<3;i++){k=bind[i];it=k&&ITEMS[k];cool=k&&(cdUntil[k]||0)>now;
+    h[i].querySelector(".ic").textContent=it?it.i:"";h[i].querySelector(".ct").textContent=it?inv[k]:"";h[i].classList.toggle("cool",!!cool);h[i].title=it?it.n+" — "+it.d:"비어 있음";
+    p=$(SLOT_PAD[i]);p.textContent=it?it.i:"·";p.classList.toggle("cool",!!cool)}
+}
+function renderInv(){
+  var box=$("invList"),k,i;box.textContent="";
+  for(k in ITEMS){(function(k){
+    var it=ITEMS[k],row=document.createElement("div"),ic=document.createElement("span"),tx=document.createElement("div"),nm=document.createElement("b"),ds=document.createElement("small"),bs=document.createElement("div");
+    row.className="it";ic.className="ic";ic.textContent=it.i;nm.textContent=it.n+" × "+inv[k];ds.textContent=it.d;tx.className="tx";tx.appendChild(nm);tx.appendChild(ds);bs.className="bs";
+    for(i=0;i<3;i++)(function(i){var b=document.createElement("button");b.textContent=SLOT_KEYS[i];b.className=bind[i]===k?"on":"";b.title=(i+1)+"번 버튼에 배정";
+      b.onclick=function(){for(var j=0;j<3;j++)if(bind[j]===k)bind[j]=null;bind[i]=k;try{localStorage.setItem("antbind",JSON.stringify(bind))}catch(_){}renderInv();renderHot()};bs.appendChild(b)})(i);
+    row.appendChild(ic);row.appendChild(tx);row.appendChild(bs);box.appendChild(row)})(k)}
+}
 /* ───────────── 봇 ───────────── */
 var BN1=["존버","익절","손절","물타기","풀매수","단타","장투","배당","떡상","야수","소심","월급","적금","코스피","나스닥","반도체","분할매수","가치투자","차트","공모주"];
 var BN2=["장인","요정","러버","꿈나무","선생","박사","대장","새싹","고수","형","누나","킴","박","초보"];
@@ -640,15 +782,16 @@ function hostOnConn(c){
       var nm=clean(m.n,12)||"이름없는개미",p=spawnPos();pid="p"+(++pidSeq);
       var e=addEnt(pid,nm,false,p[0],p[1],Math.PI);conns[pid]=c;c.last=Date.now();
       c.send({t:"wel",id:pid,vid:video,vt:vtMsg(),ps:order.map(function(id){return pack(ents[id])})});
-      castAll({t:"join",p:pack(e)},pid);toast(nm+" 님이 들어왔습니다");
+      castAll({t:"join",p:pack(e)},pid);toast(nm+" 님이 들어왔습니다");logSys(nm+" 님이 들어왔습니다");
     }else if(pid&&ents[pid]){
       c.last=Date.now();var e2=ents[pid];
       if(m.t==="m"){e2.tx=clamp(+m.x||0,-XMAX,XMAX);e2.tz=clamp(+m.z||0,ZMIN,RD-.8);e2.tr=+m.r||0}
       else if(m.t==="j"){jump(e2);castAll({t:"j",id:pid},pid)}
+      else if(m.t==="fx"){var fn=Date.now();if(ITEMS[m.k]&&fn-(c.lastFx||0)>700){c.lastFx=fn;applyFx(pid,m.k);castAll({t:"fx",id:pid,k:m.k},pid)}}
       else if(m.t==="c"){var s=clean(m.s,60),now=Date.now();if(s&&now-(c.lastChat||0)>1500){c.lastChat=now;say(pid,s);castAll({t:"c",id:pid,s:s})}}
     }
   };
-  c.onclose=function(){if(pid&&ents[pid]){var nm=ents[pid].name;delEnt(pid);delete conns[pid];castAll({t:"left",id:pid});toast(nm+" 님이 나갔습니다");pid=null}};
+  c.onclose=function(){if(pid&&ents[pid]){var nm=ents[pid].name;delEnt(pid);delete conns[pid];castAll({t:"left",id:pid});toast(nm+" 님이 나갔습니다");logSys(nm+" 님이 나갔습니다");pid=null}};
 }
 function clientOnData(m){
   if(!m||typeof m!=="object")return;lastSnap=Date.now();
@@ -656,16 +799,17 @@ function clientOnData(m){
   if(m.t==="wel"){myId=m.id;ents={};order=[];
     for(i=0;i<m.ps.length;i++){var p=m.ps[i];addEnt(p[0],p[1],p[2],p[3],p[4],p[5])}
     me=ents[myId];setVideo(m.vid||"",true);if(m.vt)vsync=mkSync(m.vt);enterRoom();
-  }else if(m.t==="join"){var q=m.p;if(!ents[q[0]])addEnt(q[0],q[1],q[2],q[3],q[4],q[5])}
-  else if(m.t==="left"){if(m.id!==myId)delEnt(m.id)}
+  }else if(m.t==="join"){var q=m.p;if(!ents[q[0]]){addEnt(q[0],q[1],q[2],q[3],q[4],q[5]);if(!q[2])logSys(q[1]+" 님이 들어왔습니다")}}
+  else if(m.t==="left"){if(m.id!==myId){if(ents[m.id]&&!ents[m.id].bot)logSys(ents[m.id].name+" 님이 나갔습니다");delEnt(m.id)}}
   else if(m.t==="s"){var a=m.a;for(i=0;i<a.length;i+=4){e=ents[a[i]];if(e&&e!==me){e.tx=a[i+1];e.tz=a[i+2];e.tr=a[i+3]}}}
   else if(m.t==="c"){say(m.id,clean(m.s,60))}
   else if(m.t==="vid"){setVideo(m.v||"",true)}
   else if(m.t==="j"){if(m.id!==myId)jump(ents[m.id])}
+  else if(m.t==="fx"){if(m.id!==myId)applyFx(m.id,m.k)}
   else if(m.t==="vt"){vsync=mkSync(m)}
   else if(m.t==="full"){fail("방이 가득 찼습니다.")}
 }
-function say(id,s){var e=ents[id];if(e){e.say=s;e.sayT=performance.now()+5500}}
+function say(id,s){var e=ents[id];if(e){e.say=s;e.sayT=performance.now()+5500;logChat(e,s)}}
 
 /* 방장 시뮬레이션·중계: 탭이 뒤로 가도 돌도록 setInterval */
 var simLast=0,botSayT=0,sendT=0;
@@ -757,7 +901,7 @@ function drawLabel(v,e,L,now){
   var top=y;
   if(fs>=13||e===me){c.font="500 "+fs*.78+"px "+FONT;c.fillStyle="rgba(255,255,255,.72)";c.fillText(e.look.title,L.x,y-fs*.62);top=y-fs*1.25}
   if(talking){
-    var bf=clamp(L.k*.4,11,18);c.font="600 "+bf+"px "+FONT;
+    var bf=clamp(L.k*.4,11,18)*(e.bigT>now?1.8:1);c.font="600 "+bf+"px "+FONT;
     var bw=c.measureText(e.say).width+bf*1.4,bh=bf*2,bx=clamp(L.x-bw/2,6,v.W-bw-6),by=top-bh-6;
     c.globalAlpha=clamp((e.sayT-now)/400,0,1);c.fillStyle="#fff";rr(c,bx,by,bw,bh,bf*.7);c.fill();
     c.beginPath();c.moveTo(L.x-5,by+bh-1);c.lineTo(L.x+5,by+bh-1);c.lineTo(L.x,by+bh+6);c.closePath();c.fill();
@@ -775,7 +919,7 @@ function frame(ts){
   if(!inRoom){drawPreview(time);return}
   var i,e,W=lbv.W,H=lbv.H;
   // 내 개미 이동
-  if(me){
+  if(me&&!(me.deadT>performance.now())){
     var ix=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+joy.x, iz=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)+joy.y,spd=5.2*Math.min(1,Math.hypot(ix,iz));
     if(Math.hypot(ix,iz)>.15){moveTarget=null;lastInput=ts;if(me.ai)me.ai.wait=0;
       var fx=-Math.sin(cam.yaw),fz=-Math.cos(cam.yaw),rx=Math.cos(cam.yaw),rz=-Math.sin(cam.yaw);
@@ -798,7 +942,9 @@ function frame(ts){
   if(me)_T.set(me.x,5.6,me.z);else _T.set(0,5,4);
   var cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
   camera.position.set(clamp(_T.x+cam.dist*Math.sin(cam.yaw)*cp,-RW+.8,RW-.8),clamp(_T.y+cam.dist*sp,1,RH-.9),clamp(_T.z+cam.dist*Math.cos(cam.yaw)*cp,-RD+.8,RD-.8));
-  camera.lookAt(_T);camera.updateMatrixWorld();
+  camera.lookAt(_T);
+  if(shake>.004){camera.position.x+=(Math.random()-.5)*shake;camera.position.y+=(Math.random()-.5)*shake;camera.rotation.z+=(Math.random()-.5)*shake*.06}
+  camera.updateMatrixWorld();updateFx(dt);
   var focusD=me?camera.position.distanceTo(_c.set(me.x,1.2,me.z)):14;if(dof)dof.material.uniforms.focus.value=focusD;
   ants.update(list,time);
   // 스크린: 유튜브 iframe을 3D 스크린 위치에 맞춤
@@ -812,7 +958,7 @@ function frame(ts){
   // 이름표 (2D 오버레이)
   var now0=performance.now(),g=lbv.ctx,focal=(H/2)/Math.tan(camera.fov*Math.PI/360),labels=[];
   g.setTransform(lbv.dpr,0,0,lbv.dpr,0,0);g.clearRect(0,0,W,H);
-  for(i=0;i<list.length;i++){e=list[i];_c.set(e.x,antTop(e)+e.y,e.z).applyMatrix4(camera.matrixWorldInverse);var dep=-_c.z;if(dep<1.2)continue;
+  for(i=0;i<list.length;i++){e=list[i];if(e.deadT>now0)continue;_c.set(e.x,antTop(e)+e.y+(bigK(e,now0)-1)*.75*e.look.scale,e.z).applyMatrix4(camera.matrixWorldInverse);var dep=-_c.z;if(dep<1.2)continue;
     if(e.bot&&!(e.say&&now0<e.sayT)&&(dep-focusD>9||focusD-dep>5))continue;      // 초점 밖 봇은 이름표 생략
     _c.applyMatrix4(camera.projectionMatrix);labels.push([e,{x:(_c.x*.5+.5)*W,y:(.5-_c.y*.5)*H,z:dep,k:focal/dep}])}
   labels.sort(function(a,b){return b[1].z-a[1].z});
@@ -830,8 +976,9 @@ function frame(ts){
 addEventListener("keydown",function(ev){
   if(!inRoom)return;var k=ev.key.toLowerCase(),inInput=/input|textarea/i.test(document.activeElement.tagName);
   if(k==="enter"&&!inInput){$("chat").focus();ev.preventDefault();return}
-  if(k==="escape"){document.activeElement.blur();$("pop").classList.remove("show");return}
-  if(inInput)return;if(k===" "){doJump();ev.preventDefault();return}keys[k]=true;if(k.indexOf("arrow")===0)ev.preventDefault()});
+  if(k==="escape"){document.activeElement.blur();$("pop").classList.remove("show");$("inv").classList.remove("show");return}
+  if(inInput)return;if(k===" "){doJump();ev.preventDefault();return}
+  if(k==="1"||k==="2"||k==="3"){useSlot(+k-1);return}if(k==="i"||k==="b"||k==="ㅑ"||k==="ㅠ"){$("bInv").click();return}keys[k]=true;if(k.indexOf("arrow")===0)ev.preventDefault()});
 addEventListener("keyup",function(ev){keys[ev.key.toLowerCase()]=false});
 addEventListener("blur",function(){keys={}});
 (function(){
@@ -867,7 +1014,7 @@ $("bSound").onclick=function(){if(!ytFrame){toast("아직 방송이 없습니다
 $("bPass").onclick=function(){var on=$("cv").classList.toggle("pass");this.classList.toggle("on",on);
   toast(on?"유튜브 화면을 직접 클릭할 수 있습니다. 다시 누르면 개미 조작으로 돌아옵니다":"개미 조작으로 돌아왔습니다",3500)};
 $("bWalk").onclick=function(){autoWalk=!autoWalk;this.classList.toggle("on",autoWalk);if(me)me.ai=null};
-$("bSet").onclick=function(){$("link").value=inviteLink();$("pop").classList.toggle("show")};
+$("bSet").onclick=function(){$("link").value=inviteLink();$("pop").classList.toggle("show");$("inv").classList.remove("show")};
 $("ytGo").onclick=function(){var raw=$("yt").value,id=ytId(raw);
   if(raw.trim()&&!id){toast("유튜브 주소를 알아보지 못했습니다");return}
   setVideo(id);toast(id?"방송을 틀었습니다":"방송을 껐습니다")};
@@ -887,9 +1034,12 @@ if(isTouch)touchOn();addEventListener("touchstart",touchOn,{once:true,passive:tr
   j.addEventListener("pointerup",up);j.addEventListener("pointercancel",up);
   function btn(el,fn){$(el).addEventListener("pointerdown",function(ev){ev.preventDefault();fn()})}
   btn("pA",doJump);
-  btn("pB",function(){$("bWalk").click();toast(autoWalk?"자동 산책 켬":"자동 산책 끔",1200)});
-  btn("pX",function(){var on=document.body.classList.toggle("chat");if(on)$("chat").focus();else $("chat").blur()});
-  btn("pY",function(){cam.yaw=0;cam.pitch=.07;cam.dist=14});
+  btn("pB",function(){useSlot(0)});btn("pX",function(){useSlot(1)});btn("pY",function(){useSlot(2)});
+  $("bChat").onclick=function(){var on=document.body.classList.toggle("chat");if(on)$("chat").focus();else $("chat").blur()};
+  $("bInv").onclick=function(){renderInv();$("inv").classList.toggle("show");$("pop").classList.remove("show")};
+  [].forEach.call($("hot").children,function(el,i){el.onclick=function(){useSlot(i)}});
+  renderHot();setInterval(renderHot,250);
+  logSys("이동 WASD · 점프 스페이스 · 아이템 1 2 3 · 채팅 Enter");
 })();
 $("bQ").onclick=function(){quality=quality==="high"?"low":"high";try{localStorage.setItem("antq",quality)}catch(_){}applyQuality()};
 $("bots").oninput=function(){$("botsN").textContent=this.value;setBots(+this.value)};
@@ -933,7 +1083,7 @@ $("alt").onclick=function(){joinCode="";this.style.display="none";$("go").textCo
 if(joinCode){$("go").textContent="입장하기";$("alt").style.display="";status("초대받은 방: "+joinCode)}else $("go").textContent="방 만들기";
 $("name").focus();
 requestAnimationFrame(frame);
-window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality},yt:yt,room:room,roomNow:roomNow,sync:function(){return vsync},ytNow:ytNow,jump:doJump};
+window.__dbg={ents:function(){return ents},me:function(){return me},cam:cam,setVideo:setVideo,renderer:renderer,q:function(){return quality},use:useSlot,fx:applyFx,yt:yt,room:room,roomNow:roomNow,sync:function(){return vsync},ytNow:ytNow,jump:doJump};
 </script>
 </body>
 </html>
