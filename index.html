@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>슈카친구들 객장</title>
 <style>
@@ -54,6 +56,16 @@
   #btns button{font-size:24px!important}
   #pA{font-size:13px!important}
   @media (max-width:1180px){#inv{top:150px}}
+  .x{position:absolute;right:10px;top:8px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.12);font-size:15px}
+  #bMenu{display:none;position:absolute;right:14px;top:14px;font-weight:700}
+  body.compact #bMenu{display:block}
+  body.compact #topright{display:none;top:62px;right:14px;left:auto;flex-direction:column;align-items:stretch;gap:6px;max-width:none;z-index:6;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  body.compact.menu #topright{display:flex}
+  body.compact #topright .pill{border-radius:10px;text-align:left;padding:11px 16px;font-size:14px;background:rgba(255,255,255,.05)}
+  body.compact #pop,body.compact #inv{position:fixed;left:50%;top:50%;right:auto;transform:translate(-50%,-50%);width:min(380px,calc(100vw - 24px));max-height:84vh;overflow:auto;z-index:8}
+  body.compact #toast{top:64px}
+  #stage{height:100dvh}
   #pad{display:none}
   body.touch #pad{display:block}
   body.touch #hint{display:none}
@@ -122,7 +134,9 @@
   <canvas id="lb"></canvas>
 
   <div id="topleft" class="pill"><span>슈카친구들 객장</span><span class="dot"></span><small id="count">0명 함께 보는 중</small></div>
+  <button class="pill" id="bMenu">메뉴</button>
   <div id="topright">
+    <button class="pill" id="bFull">전체화면</button>
     <button class="pill" id="bInvite">초대 링크 복사</button>
     <button class="pill" id="bSound">소리 켜기</button>
     <button class="pill" id="bPass" title="켜면 유튜브 화면을 직접 클릭할 수 있습니다">화면 직접 조작</button>
@@ -132,7 +146,7 @@
     <button class="pill" id="bQ">그래픽: 고급</button>
     <button class="pill" id="bSet">방 설정</button>
   </div>
-  <div id="pop">
+  <div id="pop"><button class="x" aria-label="닫기">✕</button>
     <h3>방 설정</h3>
     <div id="hostOnly">
       <label for="yt">가운데 화면에 틀 유튜브 주소 (실시간 방송·일반 영상). 들어오는 사람 모두 같은 시점을 봅니다</label>
@@ -152,7 +166,7 @@
   </div>
   <div id="log" aria-live="polite"></div>
   <div id="hot"><button><i class="ic"></i><span class="ky">1</span><span class="ct"></span></button><button><i class="ic"></i><span class="ky">2</span><span class="ct"></span></button><button><i class="ic"></i><span class="ky">3</span><span class="ct"></span></button></div>
-  <div id="inv"><h3>가방</h3><div id="invList"></div><p>숫자 버튼을 누르면 그 단축 버튼에 배정됩니다. PC는 1 · 2 · 3 키, 모바일은 오른쪽 패드의 세 버튼입니다. 지금은 시험용으로 99개씩 들어 있습니다.</p></div>
+  <div id="inv"><button class="x" aria-label="닫기">✕</button><h3>가방</h3><div id="invList"></div><p>숫자 버튼을 누르면 그 단축 버튼에 배정됩니다. PC는 1 · 2 · 3 키, 모바일은 오른쪽 패드의 세 버튼입니다. 지금은 시험용으로 99개씩 들어 있습니다.</p></div>
   <form id="chatbar" class="pill" autocomplete="off">
     <input id="chat" maxlength="60" placeholder="한마디 남기기">
     <button type="submit" aria-label="보내기">→</button>
@@ -750,7 +764,7 @@ function bcJoin(code){
 // PeerJS 전송 (인터넷 너머 친구 연결)
 function pjHost(code,onConn){
   return new Promise(function(res,rej){
-    var peer=new Peer(PREFIX+code),opened=false;
+    if(curPeer){try{curPeer.destroy()}catch(_){}}var peer=curPeer=new Peer(PREFIX+code),opened=false;
     peer.on("open",function(){opened=true;res()});
     peer.on("connection",function(dc){
       var c={id:dc.peer,send:function(d){if(dc.open)dc.send(d)},close:function(){dc.close()}};
@@ -766,7 +780,7 @@ function pjHost(code,onConn){
 }
 function pjJoin(code){
   return new Promise(function(res,rej){
-    var peer=new Peer(),done=false;
+    if(curPeer){try{curPeer.destroy()}catch(_){}}var peer=curPeer=new Peer(),done=false;
     peer.on("open",function(){
       var dc=peer.connect(PREFIX+code,{reliable:true,serialization:"json"});
       var c={send:function(d){if(dc.open)dc.send(d)},close:function(){dc.close()}};
@@ -805,7 +819,7 @@ function clientOnData(m){
   var i,e;
   if(m.t==="wel"){myId=m.id;ents={};order=[];
     for(i=0;i<m.ps.length;i++){var p=m.ps[i];addEnt(p[0],p[1],p[2],p[3],p[4],p[5])}
-    me=ents[myId];setVideo(m.vid||"",true);if(m.vt)vsync=mkSync(m.vt);enterRoom();
+    me=ents[myId];if((m.vid||"")!==video||!ytFrame)setVideo(m.vid||"",true);if(m.vt)vsync=mkSync(m.vt);enterRoom();
   }else if(m.t==="join"){var q=m.p;if(!ents[q[0]]){addEnt(q[0],q[1],q[2],q[3],q[4],q[5]);if(!q[2])logSys(q[1]+" 님이 들어왔습니다")}}
   else if(m.t==="left"){if(m.id!==myId){if(ents[m.id]&&!ents[m.id].bot)logSys(ents[m.id].name+" 님이 나갔습니다");delEnt(m.id)}}
   else if(m.t==="s"){var a=m.a;for(i=0;i<a.length;i+=4){e=ents[a[i]];if(e&&e!==me){e.tx=a[i+1];e.tz=a[i+2];e.tr=a[i+3]}}}
@@ -834,7 +848,7 @@ function tick(){
     var t=Date.now();for(var k in conns)if(t-conns[k].last>20000&&conns[k].onclose)conns[k].onclose();
   }else if(hostConn&&me){
     hostConn.send({t:"m",x:+me.x.toFixed(2),z:+me.z.toFixed(2),r:+me.r.toFixed(2)});
-    if(lastSnap&&Date.now()-lastSnap>12000){lastSnap=0;toast("방장과 연결이 끊겼습니다. 새로고침해서 다시 들어와 주세요.",1e9)}
+    if(lastSnap&&Date.now()-lastSnap>12000)hostLost();
   }
 }
 
@@ -990,7 +1004,7 @@ addEventListener("keyup",function(ev){keys[ev.key.toLowerCase()]=false});
 addEventListener("blur",function(){keys={}});
 (function(){
   var cv=$("cv"),down=null,drag=false;
-  cv.addEventListener("pointerdown",function(ev){down={x:ev.clientX,y:ev.clientY};drag=false;cv.setPointerCapture(ev.pointerId);document.activeElement.blur()});
+  cv.addEventListener("pointerdown",function(ev){closePops();document.body.classList.remove("menu");down={x:ev.clientX,y:ev.clientY};drag=false;cv.setPointerCapture(ev.pointerId);document.activeElement.blur()});
   cv.addEventListener("pointermove",function(ev){if(!down)return;var dx=ev.clientX-down.x,dy=ev.clientY-down.y;
     if(!drag&&Math.hypot(dx,dy)>6)drag=true;
     if(drag){cam.yaw-=dx*.005;cam.pitch=clamp(cam.pitch+dy*.004,.02,1.25);down={x:ev.clientX,y:ev.clientY}}});
@@ -1029,7 +1043,7 @@ $("ytDef").onclick=function(){$("yt").value="";setVideo(DEFAULT_VIDEO);toast("�
 $("ytLive").onclick=function(){$("yt").value="";setVideo("live:UCsJ6RuBiTVWRX156FVbeaGg");toast("슈카월드 실시간 방송에 연결했습니다 (방송 중일 때만 나옵니다)",4000)};
 /* 모바일 가상 패드 */
 var isTouch=false;try{isTouch=matchMedia("(pointer:coarse)").matches}catch(_){}
-function touchOn(){if(!isTouch){isTouch=true}document.body.classList.add("touch")}
+function touchOn(){if(!isTouch){isTouch=true}document.body.classList.add("touch");setCompact()}
 if(isTouch)touchOn();addEventListener("touchstart",touchOn,{once:true,passive:true});
 (function(){
   var j=$("joy"),kn=$("knob"),id=null;
@@ -1064,28 +1078,62 @@ function enterRoom(){
   if(!simLast){simLast=performance.now();setInterval(tick,110)}
   if(location.protocol==="file:")toast("파일로 직접 열면 유튜브가 재생되지 않을 수 있습니다. 웹에 올려서 열어 주세요.",6000);
 }
-function startHost(name){
-  roomCode="";var al="abcdefghjkmnpqrstuvwxyz23456789";for(var i=0;i<6;i++)roomCode+=al[(Math.random()*al.length)|0];
-  status("방을 만드는 중...");
+var curPeer=null,reconn=false,myName="";
+// 방은 코드로 유지된다: 들어가려는 방에 방장이 없으면 내가 그 코드로 방을 연다. 방장이 나가면 남은 사람이 이어받는다.
+function startHost(name,code,migr){
+  myName=name;
+  if(code)roomCode=code;else{roomCode="";var al="abcdefghjkmnpqrstuvwxyz23456789";for(var i=0;i<6;i++)roomCode+=al[(Math.random()*al.length)|0]}
+  if(!migr)status("방을 여는 중...");
   var ready=function(online){
-    isHost=true;myId="h";var p=spawnPos();me=addEnt("h",name,false,p[0]*.3,8,Math.PI);setBots(botTarget);var qv="";try{qv=ytId(new URLSearchParams(location.search).get("yt")||"")}catch(_){}setVideo(qv||DEFAULT_VIDEO);
+    var px=me?me.x:null,pz=me?me.z:null,p=spawnPos();
+    isHost=true;myId="h";hostConn=null;conns={};ents={};order=[];reconn=false;
+    me=addEnt("h",name,false,px!=null?px:p[0]*.3,pz!=null?pz:8,Math.PI);setBots(botTarget);
+    if(!(migr&&video&&ytFrame)){var qv="";try{qv=ytId(new URLSearchParams(location.search).get("yt")||"")}catch(_){}setVideo(qv||DEFAULT_VIDEO)}
     try{history.replaceState(null,"","#room-"+roomCode)}catch(_){location.hash="room-"+roomCode}
     enterRoom();
+    if(migr){toast("방장이 나가서 이 기기가 방을 이어받았습니다",4000);logSys("방장이 나가서 이 기기가 방을 이어받았습니다")}
     if(!online)toast("연결 서버에 닿지 못했습니다. 지금은 혼자 보기 모드입니다.",6000);
   };
-  (useBC?bcHost(roomCode,hostOnConn):pjHost(roomCode,hostOnConn)).then(function(){ready(true)},function(){ready(false)});
+  return (useBC?bcHost(roomCode,hostOnConn):pjHost(roomCode,hostOnConn)).then(function(){ready(true)},function(err){
+    if(err&&err.type==="unavailable-id")throw err;ready(false)});
 }
-function startJoin(name,code){
-  roomCode=code;status("방에 들어가는 중...");
+function connect(name,code,migr,tries){
+  myName=name;roomCode=code;tries=tries||0;if(!migr)status("방에 들어가는 중...");
   (useBC?bcJoin(code):pjJoin(code)).then(function(c){
-    hostConn=c;c.ondata=clientOnData;c.onclose=function(){toast("방장과 연결이 끊겼습니다. 새로고침해서 다시 들어와 주세요.",1e9)};
-    c.send({t:"hi",n:name});
-  },function(){fail("방을 찾지 못했습니다. 방장이 방을 열어 두었는지 확인해 주세요.")});
+    reconn=false;isHost=false;hostConn=c;c.ondata=clientOnData;c.onclose=hostLost;lastSnap=Date.now();c.send({t:"hi",n:name});
+  },function(err){
+    var ty=err&&err.type;
+    if(ty==="peer-unavailable"||(err&&err.message==="no-room")){                  // 방장이 없다 → 내가 연다
+      startHost(name,code,migr).catch(function(){
+        if(tries<6)setTimeout(function(){connect(name,code,migr,tries+1)},1200);else failJoin("방에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.")});
+    }else if(tries<2)setTimeout(function(){connect(name,code,migr,tries+1)},1500);
+    else failJoin(ty==="network"||ty==="server-error"||ty==="socket-error"?"연결 서버에 닿지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요."
+      :"방장과 직접 연결이 되지 않습니다. 와이파이와 모바일 데이터를 바꿔서 다시 시도해 주세요.");
+  });
 }
+function failJoin(s){reconn=false;if(inRoom)toast(s,1e9);else fail(s)}
+function hostLost(){
+  if(reconn||isHost)return;reconn=true;hostConn=null;lastSnap=0;toast("방장과 연결이 끊겨 방을 다시 잇는 중입니다...",5000);
+  setTimeout(function(){connect(myName,roomCode,true)},500+Math.random()*2500);
+}
+/* 전체화면 · 모바일 메뉴 */
+function isFull(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
+function goFull(on){var el=document.documentElement;try{
+  if(on){var f=el.requestFullscreen||el.webkitRequestFullscreen;if(!f)return false;var pr=f.call(el,{navigationUI:"hide"});if(pr&&pr.catch)pr.catch(function(){})}
+  else{var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)x.call(document)}}catch(_){return false}return true}
+function fullCh(){$("bFull").textContent=isFull()?"전체화면 끄기":"전체화면";setTimeout(resize,60)}
+document.addEventListener("fullscreenchange",fullCh);document.addEventListener("webkitfullscreenchange",fullCh);
+$("bFull").onclick=function(){if(!goFull(!isFull()))toast("이 브라우저는 전체화면을 지원하지 않습니다. 크롬이나 삼성 인터넷에서 열어 주세요",5000)};
+function closePops(){$("pop").classList.remove("show");$("inv").classList.remove("show")}
+function setCompact(){document.body.classList.toggle("compact",isTouch||innerWidth<=760)}
+setCompact();addEventListener("resize",setCompact);
+$("bMenu").onclick=function(){document.body.classList.toggle("menu");closePops()};
+$("topright").addEventListener("click",function(){document.body.classList.remove("menu")});
+[].forEach.call(document.querySelectorAll(".x"),function(b){b.onclick=closePops});
 $("name").addEventListener("input",function(){var n=clean(this.value,12);$("go").disabled=!n;
   setPreview(n);$("pvtitle").textContent=n?pvEnt.look.title:""});
 $("name").addEventListener("keydown",function(ev){if(ev.key==="Enter"&&!$("go").disabled)$("go").click()});
-$("go").onclick=function(){var n=clean($("name").value,12);if(!n)return;this.disabled=true;if(joinCode)startJoin(n,joinCode);else startHost(n)};
+$("go").onclick=function(){var n=clean($("name").value,12);if(!n)return;this.disabled=true;if(isTouch)goFull(true);if(joinCode)connect(n,joinCode);else startHost(n).catch(function(){fail("방을 만들지 못했습니다. 다시 시도해 주세요.")})};
 $("alt").onclick=function(){joinCode="";this.style.display="none";$("go").textContent="방 만들기";$("go").disabled=!clean($("name").value,12);status("")};
 if(joinCode){$("go").textContent="입장하기";$("alt").style.display="";status("초대받은 방: "+joinCode)}else $("go").textContent="방 만들기";
 $("name").focus();
